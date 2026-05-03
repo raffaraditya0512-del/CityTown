@@ -1,0 +1,1976 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>🏙️ City Builder - TheoTown Style</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { 
+  background: #1a1a2e; 
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  overflow: hidden;
+  color: #fff;
+  user-select: none;
+}
+
+#gameContainer {
+  position: relative;
+  width: 100vw;
+  height: 100vh;
+}
+
+canvas {
+  display: block;
+  cursor: crosshair;
+}
+
+/* TOP BAR */
+#topBar {
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 56px;
+  background: linear-gradient(180deg, rgba(15,15,35,0.95), rgba(15,15,35,0.8));
+  backdrop-filter: blur(10px);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 20px;
+  z-index: 100;
+  border-bottom: 1px solid rgba(255,255,255,0.1);
+}
+
+.stat {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.stat .icon { font-size: 20px; }
+.stat .value { 
+  color: #4ade80; 
+  font-variant-numeric: tabular-nums;
+  min-width: 60px;
+}
+
+.stat .value.money { color: #fbbf24; }
+.stat .value.pop { color: #60a5fa; }
+.stat .value.happy { color: #f472b6; }
+.stat .value.power { color: #f59e0b; }
+.stat .value.water { color: #38bdf8; }
+
+/* SPEED CONTROLS */
+#speedControls {
+  display: flex;
+  gap: 4px;
+  align-items: center;
+}
+
+#speedControls button {
+  width: 36px; height: 36px;
+  border: 1px solid rgba(255,255,255,0.2);
+  background: rgba(255,255,255,0.05);
+  color: #fff;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 16px;
+  transition: all 0.2s;
+}
+
+#speedControls button:hover, #speedControls button.active {
+  background: rgba(99,102,241,0.5);
+  border-color: #818cf8;
+}
+
+/* TOOLBAR */
+#toolbar {
+  position: absolute;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 6px;
+  padding: 10px 16px;
+  background: rgba(15,15,35,0.9);
+  backdrop-filter: blur(15px);
+  border-radius: 16px;
+  border: 1px solid rgba(255,255,255,0.1);
+  z-index: 100;
+  box-shadow: 0 10px 40px rgba(0,0,0,0.5);
+}
+
+.tool-btn {
+  width: 56px; height: 56px;
+  border: 2px solid rgba(255,255,255,0.1);
+  background: rgba(255,255,255,0.05);
+  border-radius: 12px;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  transition: all 0.2s;
+  position: relative;
+}
+
+.tool-btn:hover {
+  transform: translateY(-4px);
+  border-color: rgba(99,102,241,0.5);
+  background: rgba(99,102,241,0.2);
+}
+
+.tool-btn.active {
+  border-color: #818cf8;
+  background: rgba(99,102,241,0.3);
+  box-shadow: 0 0 15px rgba(99,102,241,0.3);
+}
+
+.tool-btn .emoji { font-size: 22px; }
+.tool-btn .label { font-size: 8px; color: rgba(255,255,255,0.7); text-transform: uppercase; letter-spacing: 0.5px; }
+
+.tool-btn .cost {
+  position: absolute;
+  top: -8px; right: -8px;
+  background: #fbbf24;
+  color: #000;
+  font-size: 9px;
+  font-weight: 700;
+  padding: 1px 5px;
+  border-radius: 8px;
+}
+
+.tool-divider {
+  width: 1px;
+  background: rgba(255,255,255,0.15);
+  margin: 4px 4px;
+}
+
+/* INFO PANEL */
+#infoPanel {
+  position: absolute;
+  top: 66px;
+  right: 10px;
+  width: 220px;
+  padding: 16px;
+  background: rgba(15,15,35,0.9);
+  backdrop-filter: blur(15px);
+  border-radius: 12px;
+  border: 1px solid rgba(255,255,255,0.1);
+  z-index: 100;
+  font-size: 13px;
+}
+
+#infoPanel h3 {
+  font-size: 16px;
+  margin-bottom: 10px;
+  color: #818cf8;
+}
+
+#infoPanel .info-row {
+  display: flex;
+  justify-content: space-between;
+  padding: 4px 0;
+  border-bottom: 1px solid rgba(255,255,255,0.05);
+}
+
+#infoPanel .info-label { color: rgba(255,255,255,0.6); }
+#infoPanel .info-value { font-weight: 600; }
+
+/* MINIMAP */
+#minimap {
+  position: absolute;
+  bottom: 90px;
+  right: 10px;
+  width: 160px;
+  height: 120px;
+  border-radius: 10px;
+  border: 2px solid rgba(255,255,255,0.2);
+  overflow: hidden;
+  z-index: 100;
+  background: #0a0a1a;
+}
+
+#minimapCanvas {
+  width: 100%;
+  height: 100%;
+}
+
+/* NOTIFICATION */
+#notification {
+  position: absolute;
+  top: 70px;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 10px 24px;
+  background: rgba(15,15,35,0.95);
+  border-radius: 10px;
+  border: 1px solid rgba(99,102,241,0.5);
+  z-index: 200;
+  font-size: 14px;
+  font-weight: 600;
+  opacity: 0;
+  transition: opacity 0.3s;
+  pointer-events: none;
+}
+
+#notification.show { opacity: 1; }
+
+/* TOOLTIP */
+#tooltip {
+  position: absolute;
+  padding: 8px 14px;
+  background: rgba(0,0,0,0.9);
+  border-radius: 8px;
+  border: 1px solid rgba(255,255,255,0.2);
+  font-size: 12px;
+  z-index: 300;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.15s;
+  max-width: 200px;
+}
+
+#tooltip.show { opacity: 1; }
+#tooltip .tt-title { font-weight: 700; color: #818cf8; margin-bottom: 4px; }
+#tooltip .tt-desc { color: rgba(255,255,255,0.7); font-size: 11px; }
+#tooltip .tt-cost { color: #fbbf24; font-weight: 600; margin-top: 4px; }
+
+/* DATE DISPLAY */
+#dateDisplay {
+  font-size: 13px;
+  color: rgba(255,255,255,0.8);
+  font-weight: 500;
+}
+
+/* MODAL */
+#modal {
+  position: absolute;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(0,0,0,0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 500;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.3s;
+}
+
+#modal.show { opacity: 1; pointer-events: all; }
+
+#modalContent {
+  background: linear-gradient(135deg, #1a1a3e, #0f0f2a);
+  padding: 30px;
+  border-radius: 16px;
+  border: 1px solid rgba(99,102,241,0.3);
+  text-align: center;
+  max-width: 400px;
+}
+
+#modalContent h2 { margin-bottom: 10px; color: #818cf8; }
+#modalContent p { color: rgba(255,255,255,0.7); margin-bottom: 20px; font-size: 14px; line-height: 1.6; }
+
+#modalContent button {
+  padding: 10px 30px;
+  background: linear-gradient(135deg, #6366f1, #818cf8);
+  color: #fff;
+  border: none;
+  border-radius: 10px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: transform 0.2s;
+}
+
+#modalContent button:hover { transform: scale(1.05); }
+
+/* BUILDING INFO OVERLAY */
+#buildInfo {
+  position: absolute;
+  top: 66px;
+  left: 10px;
+  padding: 12px 18px;
+  background: rgba(15,15,35,0.9);
+  backdrop-filter: blur(15px);
+  border-radius: 12px;
+  border: 1px solid rgba(255,255,255,0.1);
+  z-index: 100;
+  font-size: 13px;
+  min-width: 200px;
+}
+
+#buildInfo .bi-name { font-size: 16px; font-weight: 700; color: #818cf8; margin-bottom: 6px; }
+#buildInfo .bi-desc { color: rgba(255,255,255,0.6); font-size: 12px; margin-bottom: 8px; }
+#buildInfo .bi-stats { display: flex; gap: 12px; flex-wrap: wrap; }
+#buildInfo .bi-stat { font-size: 11px; }
+#buildInfo .bi-stat span { font-weight: 700; }
+
+/* VEHICLE PANEL */
+#vehiclePanel {
+  position: absolute;
+  bottom: 90px;
+  left: 10px;
+  width: 200px;
+  padding: 12px;
+  background: rgba(15,15,35,0.9);
+  backdrop-filter: blur(15px);
+  border-radius: 12px;
+  border: 1px solid rgba(255,255,255,0.1);
+  z-index: 100;
+  font-size: 12px;
+}
+
+#vehiclePanel h4 { color: #818cf8; margin-bottom: 8px; font-size: 14px; }
+.vp-row { display: flex; justify-content: space-between; padding: 3px 0; }
+.vp-label { color: rgba(255,255,255,0.6); }
+.vp-count { font-weight: 700; }
+
+/* SCROLLBAR */
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.2); border-radius: 3px; }
+
+/* LOADING */
+#loading {
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: #0a0a1a;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  transition: opacity 0.5s;
+}
+
+#loading.hidden { opacity: 0; pointer-events: none; }
+
+#loading h1 { font-size: 36px; color: #818cf8; margin-bottom: 10px; }
+#loading p { color: rgba(255,255,255,0.5); margin-bottom: 30px; }
+
+.loader {
+  width: 60px; height: 60px;
+  border: 4px solid rgba(99,102,241,0.2);
+  border-top-color: #818cf8;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* PROGRESS BAR */
+.progress-bar {
+  width: 100%;
+  height: 4px;
+  background: rgba(255,255,255,0.1);
+  border-radius: 2px;
+  overflow: hidden;
+  margin-top: 6px;
+}
+
+.progress-bar .fill {
+  height: 100%;
+  background: linear-gradient(90deg, #6366f1, #818cf8);
+  border-radius: 2px;
+  transition: width 0.3s;
+}
+</style>
+</head>
+<body>
+
+<div id="loading">
+  <h1>🏙️ City Builder</h1>
+  <p>Memuat kota impianmu...</p>
+  <div class="loader"></div>
+</div>
+
+<div id="gameContainer">
+  <canvas id="gameCanvas"></canvas>
+  
+  <!-- TOP BAR -->
+  <div id="topBar">
+    <div style="display:flex;gap:20px;align-items:center;">
+      <div class="stat"><span class="icon">💰</span><span class="value money" id="moneyDisplay">$50,000</span></div>
+      <div class="stat"><span class="icon">👥</span><span class="value pop" id="popDisplay">0</span></div>
+      <div class="stat"><span class="icon">😊</span><span class="value happy" id="happyDisplay">100%</span></div>
+      <div class="stat"><span class="icon">⚡</span><span class="value power" id="powerDisplay">0/0</span></div>
+      <div class="stat"><span class="icon">💧</span><span class="value water" id="waterDisplay">0/0</span></div>
+    </div>
+    <div id="dateDisplay">📅 Tahun 1, Bulan 1</div>
+    <div id="speedControls">
+      <button onclick="setSpeed(0)" id="speed0">⏸</button>
+      <button onclick="setSpeed(1)" id="speed1" class="active">▶</button>
+      <button onclick="setSpeed(2)" id="speed2">⏩</button>
+      <button onclick="setSpeed(3)" id="speed3">⏭</button>
+    </div>
+  </div>
+
+  <!-- BUILDING INFO -->
+  <div id="buildInfo" style="display:none;">
+    <div class="bi-name" id="biName"></div>
+    <div class="bi-desc" id="biDesc"></div>
+    <div class="bi-stats" id="biStats"></div>
+  </div>
+
+  <!-- INFO PANEL -->
+  <div id="infoPanel">
+    <h3>📊 Statistik Kota</h3>
+    <div class="info-row"><span class="info-label">Pendapatan</span><span class="info-value" id="infoIncome" style="color:#4ade80">+$0</span></div>
+    <div class="info-row"><span class="info-label">Pengeluaran</span><span class="info-value" id="infoExpense" style="color:#f87171">-$0</span></div>
+    <div class="info-row"><span class="info-label">Bangunan</span><span class="info-value" id="infoBuildings">0</span></div>
+    <div class="info-row"><span class="info-label">Jalan</span><span class="info-value" id="infoRoads">0</span></div>
+    <div class="info-row"><span class="info-label">Polusi</span><span class="info-value" id="infoPollution" style="color:#4ade80">0</span></div>
+    <div class="info-row"><span class="info-label">Crime</span><span class="info-value" id="infoCrime" style="color:#4ade80">0%</span></div>
+    <div class="info-row"><span class="info-label">Kesehatan</span><span class="info-value" id="infoHealth">0%</span></div>
+    <div class="info-row"><span class="info-label">Pendidikan</span><span class="info-value" id="infoEdu">0%</span></div>
+    <div style="margin-top:10px;padding-top:8px;border-top:1px solid rgba(255,255,255,0.1);">
+      <div class="info-row"><span class="info-label">Residential</span><span class="info-value" id="infoRes" style="color:#34d399">0</span></div>
+      <div class="info-row"><span class="info-label">Commercial</span><span class="info-value" id="infoCom" style="color:#60a5fa">0</span></div>
+      <div class="info-row"><span class="info-label">Industrial</span><span class="info-value" id="infoInd" style="color:#fbbf24">0</span></div>
+    </div>
+  </div>
+
+  <!-- MINIMAP -->
+  <div id="minimap">
+    <canvas id="minimapCanvas"></canvas>
+  </div>
+
+  <!-- VEHICLE PANEL -->
+  <div id="vehiclePanel">
+    <h4>🚗 Kendaraan</h4>
+    <div class="vp-row"><span class="vp-label">🚗 Mobil</span><span class="vp-count" id="vpCars">0</span></div>
+    <div class="vp-row"><span class="vp-label">🚂 Kereta</span><span class="vp-count" id="vpTrains">0</span></div>
+    <div class="vp-row"><span class="vp-label">🚢 Kapal</span><span class="vp-count" id="vpShips">0</span></div>
+    <div class="vp-row"><span class="vp-label">✈️ Pesawat</span><span class="vp-count" id="vpPlanes">0</span></div>
+  </div>
+
+  <!-- TOOLBAR -->
+  <div id="toolbar">
+    <button class="tool-btn" data-tool="bulldoze" onclick="selectTool('bulldoze')">
+      <span class="emoji">🔨</span>
+      <span class="label">Hapus</span>
+    </button>
+    <div class="tool-divider"></div>
+    <button class="tool-btn" data-tool="road" onclick="selectTool('road')">
+      <span class="emoji">🛣️</span>
+      <span class="label">Jalan</span>
+      <span class="cost">$10</span>
+    </button>
+    <button class="tool-btn" data-tool="rail" onclick="selectTool('rail')">
+      <span class="emoji">🛤️</span>
+      <span class="label">Rel</span>
+      <span class="cost">$20</span>
+    </button>
+    <div class="tool-divider"></div>
+    <button class="tool-btn" data-tool="residential" onclick="selectTool('residential')">
+      <span class="emoji">🏠</span>
+      <span class="label">Rumah</span>
+      <span class="cost">$100</span>
+    </button>
+    <button class="tool-btn" data-tool="commercial" onclick="selectTool('commercial')">
+      <span class="emoji">🏪</span>
+      <span class="label">Toko</span>
+      <span class="cost">$150</span>
+    </button>
+    <button class="tool-btn" data-tool="industrial" onclick="selectTool('industrial')">
+      <span class="emoji">🏭</span>
+      <span class="label">Pabrik</span>
+      <span class="cost">$200</span>
+    </button>
+    <div class="tool-divider"></div>
+    <button class="tool-btn" data-tool="powerplant" onclick="selectTool('powerplant')">
+      <span class="emoji">⚡</span>
+      <span class="label">PLN</span>
+      <span class="cost">$500</span>
+    </button>
+    <button class="tool-btn" data-tool="watertower" onclick="selectTool('watertower')">
+      <span class="emoji">💧</span>
+      <span class="label">Air</span>
+      <span class="cost">$300</span>
+    </button>
+    <button class="tool-btn" data-tool="park" onclick="selectTool('park')">
+      <span class="emoji">🌳</span>
+      <span class="label">Taman</span>
+      <span class="cost">$50</span>
+    </button>
+    <button class="tool-btn" data-tool="hospital" onclick="selectTool('hospital')">
+      <span class="emoji">🏥</span>
+      <span class="label">RS</span>
+      <span class="cost">$800</span>
+    </button>
+    <button class="tool-btn" data-tool="police" onclick="selectTool('police')">
+      <span class="emoji">🚔</span>
+      <span class="label">Polisi</span>
+      <span class="cost">$600</span>
+    </button>
+    <button class="tool-btn" data-tool="school" onclick="selectTool('school')">
+      <span class="emoji">🏫</span>
+      <span class="label">Sekolah</span>
+      <span class="cost">$400</span>
+    </button>
+    <div class="tool-divider"></div>
+    <button class="tool-btn" data-tool="trainstation" onclick="selectTool('trainstation')">
+      <span class="emoji">🚉</span>
+      <span class="label">Stasiun</span>
+      <span class="cost">$1000</span>
+    </button>
+    <button class="tool-btn" data-tool="airport" onclick="selectTool('airport')">
+      <span class="emoji">✈️</span>
+      <span class="label">Bandara</span>
+      <span class="cost">$5000</span>
+    </button>
+    <button class="tool-btn" data-tool="port" onclick="selectTool('port')">
+      <span class="emoji">🚢</span>
+      <span class="label">Pelabuhan</span>
+      <span class="cost">$3000</span>
+    </button>
+    <div class="tool-divider"></div>
+    <button class="tool-btn" data-tool="water" onclick="selectTool('water')">
+      <span class="emoji">🌊</span>
+      <span class="label">Air</span>
+    </button>
+    <button class="tool-btn" data-tool="tree" onclick="selectTool('tree')">
+      <span class="emoji">🌲</span>
+      <span class="label">Pohon</span>
+    </button>
+    <button class="tool-btn" data-tool="query" onclick="selectTool('query')">
+      <span class="emoji">🔍</span>
+      <span class="label">Info</span>
+    </button>
+  </div>
+
+  <!-- NOTIFICATION -->
+  <div id="notification"></div>
+  <!-- TOOLTIP -->
+  <div id="tooltip">
+    <div class="tt-title"></div>
+    <div class="tt-desc"></div>
+    <div class="tt-cost"></div>
+  </div>
+
+  <!-- MODAL -->
+  <div id="modal">
+    <div id="modalContent">
+      <h2 id="modalTitle"></h2>
+      <p id="modalText"></p>
+      <button onclick="closeModal()">OK</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ==================== AUDIO ENGINE ====================
+class AudioEngine {
+  constructor() {
+    this.ctx = null;
+    this.enabled = true;
+    this.volume = 0.3;
+  }
+
+  init() {
+    if (this.ctx) return;
+    try {
+      this.ctx = new (window.AudioContext || window.webkitAudioContext)();
+      this.masterGain = this.ctx.createGain();
+      this.masterGain.gain.value = this.volume;
+      this.masterGain.connect(this.ctx.destination);
+    } catch(e) { console.log('Audio not supported'); }
+  }
+
+  play(type) {
+    if (!this.ctx || !this.enabled) return;
+    try {
+      switch(type) {
+        case 'build': this._playBuild(); break;
+        case 'bulldoze': this._playBulldoze(); break;
+        case 'error': this._playError(); break;
+        case 'click': this._playClick(); break;
+        case 'vehicle': this._playVehicle(); break;
+        case 'money': this._playMoney(); break;
+        case 'levelup': this._playLevelUp(); break;
+      }
+    } catch(e) {}
+  }
+
+  _tone(freq, duration, type='square', vol=0.1) {
+    const osc = this.ctx.createOscillator();
+    const gain = this.ctx.createGain();
+    osc.type = type;
+    osc.frequency.setValueAtTime(freq, this.ctx.currentTime);
+    gain.gain.setValueAtTime(vol, this.ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + duration);
+    osc.connect(gain);
+    gain.connect(this.masterGain);
+    osc.start();
+    osc.stop(this.ctx.currentTime + duration);
+  }
+
+  _playBuild() {
+    this._tone(400, 0.1, 'square', 0.08);
+    setTimeout(() => this._tone(600, 0.1, 'square', 0.08), 80);
+    setTimeout(() => this._tone(800, 0.15, 'square', 0.06), 160);
+  }
+
+  _playBulldoze() {
+    this._tone(200, 0.15, 'sawtooth', 0.06);
+    setTimeout(() => this._tone(150, 0.2, 'sawtooth', 0.05), 100);
+  }
+
+  _playError() {
+    this._tone(200, 0.15, 'square', 0.08);
+    setTimeout(() => this._tone(150, 0.2, 'square', 0.08), 150);
+  }
+
+  _playClick() {
+    this._tone(800, 0.05, 'sine', 0.05);
+  }
+
+  _playVehicle() {
+    this._tone(300, 0.1, 'triangle', 0.03);
+  }
+
+  _playMoney() {
+    this._tone(1200, 0.08, 'sine', 0.06);
+    setTimeout(() => this._tone(1600, 0.12, 'sine', 0.05), 80);
+  }
+
+  _playLevelUp() {
+    this._tone(523, 0.15, 'sine', 0.08);
+    setTimeout(() => this._tone(659, 0.15, 'sine', 0.08), 150);
+    setTimeout(() => this._tone(784, 0.2, 'sine', 0.08), 300);
+    setTimeout(() => this._tone(1047, 0.3, 'sine', 0.06), 450);
+  }
+}
+
+const audio = new AudioEngine();
+
+// ==================== GAME CONFIG ====================
+const TILE_SIZE = 32;
+const MAP_W = 80;
+const MAP_H = 80;
+const WATER_LEVEL = 0.3;
+
+const BUILDING_COSTS = {
+  road: 10, rail: 20, residential: 100, commercial: 150, industrial: 200,
+  powerplant: 500, watertower: 300, park: 50, hospital: 800, police: 600,
+  school: 400, trainstation: 1000, airport: 5000, port: 3000, tree: 5
+};
+
+const BUILDING_INFO = {
+  residential: { name: '🏠 Residential', desc: 'Tempat tinggal warga. Meningkatkan populasi.', cost: 100, maint: 2, power: 0, water: 0, pop: 20, income: 0, pollution: 0, happy: 0 },
+  commercial: { name: '🏪 Commercial', desc: 'Toko & bisnis. Menghasilkan pajak.', cost: 150, maint: 5, power: 1, water: 0, pop: 0, income: 15, pollution: 0, happy: 2 },
+  industrial: { name: '🏭 Industrial', desc: 'Pabrik & industri. Pendapatan tinggi tapi polusi.', cost: 200, maint: 8, power: 2, water: 1, pop: 0, income: 25, pollution: 5, happy: -3 },
+  powerplant: { name: '⚡ Power Plant', desc: 'Menyediakan listrik untuk kota.', cost: 500, maint: 20, power: 50, water: 0, pop: 0, income: 0, pollution: 8, happy: -2 },
+  watertower: { name: '💧 Water Tower', desc: 'Menyediakan air bersih.', cost: 300, maint: 10, power: 1, water: 50, pop: 0, income: 0, pollution: 0, happy: 1 },
+  park: { name: '🌳 Park', desc: 'Taman kota. Meningkatkan kebahagiaan.', cost: 50, maint: 3, power: 0, water: 1, pop: 0, income: 0, pollution: 0, happy: 5 },
+  hospital: { name: '🏥 Hospital', desc: 'Rumah sakit. Meningkatkan kesehatan warga.', cost: 800, maint: 30, power: 2, water: 2, pop: 0, income: 0, pollution: 0, happy: 3, health: 20 },
+  police: { name: '🚔 Police Station', desc: 'Kantor polisi. Mengurangi kejahatan.', cost: 600, maint: 25, power: 1, water: 1, pop: 0, income: 0, pollution: 0, happy: 2, crime: -15 },
+  school: { name: '🏫 School', desc: 'Sekolah. Meningkatkan pendidikan.', cost: 400, maint: 15, power: 1, water: 1, pop: 0, income: 0, pollution: 0, happy: 1, edu: 15 },
+  trainstation: { name: '🚉 Train Station', desc: 'Stasiun kereta. Menghubungkan kota.', cost: 1000, maint: 20, power: 2, water: 1, pop: 0, income: 10, pollution: 0, happy: 2 },
+  airport: { name: '✈️ Airport', desc: 'Bandara. Pesawat akan terbang.', cost: 5000, maint: 50, power: 5, water: 3, pop: 0, income: 50, pollution: 3, happy: 5 },
+  port: { name: '🚢 Port', desc: 'Pelabuhan. Kapal akan berlabuh.', cost: 3000, maint: 40, power: 3, water: 2, pop: 0, income: 40, pollution: 2, happy: 3 },
+  road: { name: '🛣️ Road', desc: 'Jalan raya. Kendaraan bisa lewat.', cost: 10, maint: 1, power: 0, water: 0, pop: 0, income: 0, pollution: 0, happy: 0 },
+  rail: { name: '🛤️ Railway', desc: 'Rel kereta api.', cost: 20, maint: 2, power: 0, water: 0, pop: 0, income: 0, pollution: 0, happy: 0 },
+  tree: { name: '🌲 Tree', desc: 'Pohon. Mengurangi polusi.', cost: 5, maint: 0, power: 0, water: 0, pop: 0, income: 0, pollution: -1, happy: 1 },
+  water: { name: '🌊 Water', desc: 'Area air.', cost: 0, maint: 0 },
+};
+
+// ==================== GAME STATE ====================
+let canvas, ctx, mmCanvas, mmCtx;
+let map = [];
+let camera = { x: 0, y: 0, zoom: 1 };
+let mouse = { x: 0, y: 0, gridX: -1, gridY: -1, down: false, right: false };
+let selectedTool = null;
+let gameSpeed = 1;
+let gameTime = 0;
+let money = 50000;
+let population = 0;
+let happiness = 100;
+let powerSupply = 0, powerDemand = 0;
+let waterSupply = 0, waterDemand = 0;
+let pollution = 0;
+let crimeRate = 0;
+let healthLevel = 0;
+let eduLevel = 0;
+let income = 0;
+let expenses = 0;
+let totalBuildings = 0;
+let totalRoads = 0;
+let buildings = { residential: 0, commercial: 0, industrial: 0 };
+let vehicles = { cars: [], trains: [], ships: [], planes: [] };
+let particles = [];
+let isDragging = false;
+let dragStart = { x: 0, y: 0 };
+let camStart = { x: 0, y: 0 };
+let dayNightCycle = 0;
+let dayPhase = 0;
+
+// ==================== MAP GENERATION ====================
+function generateMap() {
+  // Simple terrain with water
+  const seed = Math.random() * 1000;
+  
+  for (let y = 0; y < MAP_H; y++) {
+    map[y] = [];
+    for (let x = 0; x < MAP_W; x++) {
+      // Create interesting terrain
+      let nx = x / MAP_W, ny = y / MAP_H;
+      let dist = Math.sqrt((nx-0.5)**2 + (ny-0.5)**2) * 2;
+      
+      let val = simplex2D(x * 0.05 + seed, y * 0.05 + seed);
+      val += simplex2D(x * 0.1, y * 0.1) * 0.5;
+      
+      // River
+      let river = Math.abs(y - MAP_H/2 - Math.sin(x * 0.1) * 8);
+      if (river < 3) val -= 0.5;
+      
+      // Lake
+      let lakeDist = Math.sqrt((x - MAP_W*0.7)**2 + (y - MAP_H*0.3)**2);
+      if (lakeDist < 8) val -= 0.8;
+      
+      // Coast edges
+      if (nx < 0.1 || nx > 0.9 || ny < 0.1 || ny > 0.9) val -= 0.4;
+      
+      let isWater = val < WATER_LEVEL;
+      
+      map[y][x] = {
+        type: 'empty',
+        terrain: isWater ? 'water' : (val > 0.8 ? 'hill' : (val > 0.5 ? 'forest' : 'grass')),
+        height: val,
+        building: null,
+        level: 0,
+        growthTimer: 0
+      };
+    }
+  }
+}
+
+// Simple noise function
+function simplex2D(x, y) {
+  let n = Math.sin(x * 12.9898 + y * 78.233) * 43758.5453;
+  return n - Math.floor(n);
+}
+
+// ==================== RENDERING ====================
+function getTileColor(tile) {
+  if (tile.type !== 'empty') return null;
+  
+  switch(tile.terrain) {
+    case 'water': return '#2563eb';
+    case 'grass': return '#22c55e';
+    case 'forest': return '#166534';
+    case 'hill': return '#854d0e';
+    default: return '#22c55e';
+  }
+}
+
+function getBuildingColor(type, level) {
+  const colors = {
+    residential: ['#86efac', '#4ade80', '#22c55e'],
+    commercial: ['#93c5fd', '#60a5fa', '#3b82f6'],
+    industrial: ['#fde68a', '#fbbf24', '#f59e0b'],
+    road: '#6b7280',
+    rail: '#78716c',
+    powerplant: '#fbbf24',
+    watertower: '#38bdf8',
+    park: '#4ade80',
+    hospital: '#f87171',
+    police: '#3b82f6',
+    school: '#a78bfa',
+    trainstation: '#6b7280',
+    airport: '#9ca3af',
+    port: '#6b7280',
+    tree: '#166534',
+    water: '#2563eb'
+  };
+  let c = colors[type] || '#888';
+  if (Array.isArray(c)) c = c[Math.min(level, c.length-1)] || c[0];
+  return c;
+}
+
+function drawBuilding(x, y, type, level, tile) {
+  const ts = TILE_SIZE;
+  const sx = x - camera.x;
+  const sy = y - camera.y;
+  
+  if (sx < -ts || sx > canvas.width || sy < -ts || sy > canvas.height) return;
+  
+  ctx.save();
+  
+  switch(type) {
+    case 'residential': {
+      let h = 8 + level * 6;
+      let w = 16 + level * 2;
+      ctx.fillStyle = getBuildingColor(type, level);
+      ctx.fillRect(sx + ts/2 - w/2, sy + ts/2 - h/2 - 4, w, h);
+      ctx.fillStyle = '#166534';
+      ctx.fillRect(sx + ts/2 - w/2 - 2, sy + ts/2 - h/2 - 8, w + 4, 6);
+      // Windows
+      ctx.fillStyle = dayPhase > 0.5 ? '#fbbf24' : '#1e3a5f';
+      for (let wy = 0; wy < level + 1; wy++) {
+        for (let wx = 0; wx < 2; wx++) {
+          ctx.fillRect(sx + ts/2 - 4 + wx * 8, sy + ts/2 - h/2 - 1 + wy * 7, 4, 4);
+        }
+      }
+      break;
+    }
+    case 'commercial': {
+      let h = 10 + level * 8;
+      ctx.fillStyle = getBuildingColor(type, level);
+      ctx.fillRect(sx + 4, sy + ts/2 - h, ts - 8, h);
+      ctx.fillStyle = dayPhase > 0.5 ? '#fbbf24' : '#1e3a5f';
+      ctx.fillRect(sx + 8, sy + ts/2 - h + 4, ts - 16, 4);
+      ctx.fillRect(sx + 8, sy + ts/2 - h + 12, ts - 16, 4);
+      // Sign
+      ctx.fillStyle = '#f59e0b';
+      ctx.fillRect(sx + 6, sy + ts/2 - h - 3, ts - 12, 3);
+      break;
+    }
+    case 'industrial': {
+      ctx.fillStyle = getBuildingColor(type, level);
+      ctx.fillRect(sx + 2, sy + 8, ts - 4, ts - 12);
+      // Smokestack
+      ctx.fillStyle = '#6b7280';
+      ctx.fillRect(sx + ts - 10, sy, 6, 12);
+      // Smoke particles
+      if (Math.random() < 0.02) {
+        particles.push({
+          x: x * TILE_SIZE + ts - 7, y: y * TILE_SIZE,
+          vx: (Math.random() - 0.5) * 0.5, vy: -0.5 - Math.random() * 0.5,
+          life: 60, maxLife: 60, color: 'rgba(150,150,150,', size: 3
+        });
+      }
+      break;
+    }
+    case 'road': {
+      ctx.fillStyle = '#4b5563';
+      ctx.fillRect(sx, sy, ts, ts);
+      // Road markings
+      ctx.fillStyle = '#fbbf24';
+      ctx.fillRect(sx + ts/2 - 1, sy + 2, 2, ts - 4);
+      ctx.setLineDash([4, 4]);
+      ctx.strokeStyle = '#fff';
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo(sx + ts/2, sy);
+      ctx.lineTo(sx + ts/2, sy + ts);
+      ctx.stroke();
+      ctx.setLineDash([]);
+      break;
+    }
+    case 'rail': {
+      ctx.fillStyle = '#92400e';
+      ctx.fillRect(sx, sy + 8, ts, 4);
+      ctx.fillRect(sx, sy + 20, ts, 4);
+      // Sleepers
+      ctx.fillStyle = '#6b7280';
+      for (let i = 2; i < ts; i += 6) {
+        ctx.fillRect(sx + i, sy + 6, 3, 20);
+      }
+      break;
+    }
+    case 'powerplant': {
+      ctx.fillStyle = '#78716c';
+      ctx.fillRect(sx + 4, sy + 10, ts - 8, ts - 14);
+      ctx.fillStyle = '#fbbf24';
+      ctx.fillRect(sx + 8, sy + 4, ts - 16, 10);
+      // Lightning bolt
+      ctx.fillStyle = '#fbbf24';
+      ctx.font = '14px Arial';
+      ctx.fillText('⚡', sx + 8, sy + 26);
+      break;
+    }
+    case 'watertower': {
+      ctx.fillStyle = '#92400e';
+      ctx.fillRect(sx + 12, sy + 16, 8, 14);
+      ctx.fillStyle = '#38bdf8';
+      ctx.beginPath();
+      ctx.arc(sx + 16, sy + 12, 10, 0, Math.PI * 2);
+      ctx.fill();
+      break;
+    }
+    case 'park': {
+      ctx.fillStyle = '#22c55e';
+      ctx.fillRect(sx, sy, ts, ts);
+      // Trees
+      ctx.fillStyle = '#166534';
+      ctx.beginPath();
+      ctx.arc(sx + 10, sy + 14, 6, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.beginPath();
+      ctx.arc(sx + 22, sy + 18, 5, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = '#78350f';
+      ctx.fillRect(sx + 9, sy + 18, 2, 6);
+      ctx.fillRect(sx + 21, sy + 21, 2, 5);
+      break;
+    }
+    case 'hospital': {
+      ctx.fillStyle = '#f87171';
+      ctx.fillRect(sx + 4, sy + 8, ts - 8, ts - 12);
+      ctx.fillStyle = '#fff';
+      ctx.fillRect(sx + 13, sy + 10, 6, 14);
+      ctx.fillRect(sx + 9, sy + 14, 14, 6);
+      break;
+    }
+    case 'police': {
+      ctx.fillStyle = '#3b82f6';
+      ctx.fillRect(sx + 4, sy + 8, ts - 8, ts - 12);
+      ctx.fillStyle = '#fff';
+      ctx.fillRect(sx + 6, sy + 10, ts - 12, 3);
+      // Siren
+      if (Math.floor(gameTime / 30) % 2 === 0) {
+        ctx.fillStyle = '#ef4444';
+      } else {
+        ctx.fillStyle = '#3b82f6';
+      }
+      ctx.fillRect(sx + 10, sy + 4, 4, 4);
+      ctx.fillRect(sx + 18, sy + 4, 4, 4);
+      break;
+    }
+    case 'school': {
+      ctx.fillStyle = '#a78bfa';
+      ctx.fillRect(sx + 4, sy + 8, ts - 8, ts - 12);
+      ctx.fillStyle = '#fbbf24';
+      ctx.fillRect(sx + 6, sy + 4, ts - 12, 4);
+      ctx.fillStyle = '#fff';
+      ctx.font = '10px Arial';
+      ctx.fillText('📚', sx + 6, sy + 24);
+      break;
+    }
+    case 'trainstation': {
+      ctx.fillStyle = '#6b7280';
+      ctx.fillRect(sx + 2, sy + 10, ts - 4, ts - 14);
+      ctx.fillStyle = '#fbbf24';
+      ctx.fillRect(sx + 2, sy + 6, ts - 4, 6);
+      ctx.fillStyle = '#fff';
+      ctx.font = '8px Arial';
+      ctx.fillText('🚉', sx + 4, sy + 24);
+      break;
+    }
+    case 'airport': {
+      ctx.fillStyle = '#9ca3af';
+      ctx.fillRect(sx + 2, sy + 8, ts - 4, ts - 12);
+      // Runway
+      ctx.fillStyle = '#4b5563';
+      ctx.fillRect(sx, sy + ts/2 - 2, ts, 4);
+      ctx.fillStyle = '#fff';
+      ctx.setLineDash([2, 3]);
+      ctx.fillRect(sx, sy + ts/2 - 1, ts, 2);
+      ctx.setLineDash([]);
+      break;
+    }
+    case 'port': {
+      ctx.fillStyle = '#78716c';
+      ctx.fillRect(sx + 2, sy + 12, ts - 4, ts - 16);
+      // Dock
+      ctx.fillStyle = '#92400e';
+      ctx.fillRect(sx, sy + 4, ts, 6);
+      ctx.fillStyle = '#fff';
+      ctx.font = '10px Arial';
+      ctx.fillText('🚢', sx + 6, sy + 24);
+      break;
+    }
+    case 'tree': {
+      ctx.fillStyle = '#166534';
+      ctx.beginPath();
+      ctx.arc(sx + ts/2, sy + ts/2, 10, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = '#78350f';
+      ctx.fillRect(sx + ts/2 - 2, sy + ts/2 + 6, 4, 8);
+      break;
+    }
+  }
+  
+  ctx.restore();
+}
+
+function render() {
+  const W = canvas.width, H = canvas.height;
+  
+  // Sky gradient based on day/night
+  dayNightCycle += 0.0001 * gameSpeed;
+  dayPhase = (Math.sin(dayNightCycle * Math.PI * 2) + 1) / 2;
+  
+  let skyR = Math.floor(30 + dayPhase * 100);
+  let skyG = Math.floor(30 + dayPhase * 120);
+  let skyB = Math.floor(60 + dayPhase * 150);
+  
+  ctx.fillStyle = `rgb(${skyR},${skyG},${skyB})`;
+  ctx.fillRect(0, 0, W, H);
+  
+  // Calculate visible range
+  const startX = Math.max(0, Math.floor(camera.x / TILE_SIZE));
+  const startY = Math.max(0, Math.floor(camera.y / TILE_SIZE));
+  const endX = Math.min(MAP_W, Math.ceil((camera.x + W) / TILE_SIZE) + 1);
+  const endY = Math.min(MAP_H, Math.ceil((camera.y + H) / TILE_SIZE) + 1);
+  
+  // Draw terrain
+  for (let y = startY; y < endY; y++) {
+    for (let x = startX; x < endX; x++) {
+      const tile = map[y][x];
+      const sx = Math.floor(x * TILE_SIZE - camera.x);
+      const sy = Math.floor(y * TILE_SIZE - camera.y);
+      
+      // Base terrain
+      ctx.fillStyle = getTileColor(tile);
+      ctx.fillRect(sx, sy, TILE_SIZE, TILE_SIZE);
+      
+      // Terrain details
+      if (tile.terrain === 'grass') {
+        ctx.fillStyle = '#16a34a';
+        ctx.fillRect(sx + 8, sy + 8, 2, 2);
+        ctx.fillRect(sx + 20, sy + 22, 2, 2);
+      } else if (tile.terrain === 'forest') {
+        ctx.fillStyle = '#15803d';
+        ctx.beginPath();
+        ctx.arc(sx + 16, sy + 20, 8, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = '#78350f';
+        ctx.fillRect(sx + 15, sy + 24, 2, 6);
+      } else if (tile.terrain === 'water') {
+        // Water animation
+        let waveOffset = Math.sin(gameTime * 0.05 + x * 0.5 + y * 0.3) * 0.1;
+        ctx.fillStyle = `rgba(59,130,246,${0.3 + waveOffset})`;
+        ctx.fillRect(sx, sy, TILE_SIZE, TILE_SIZE);
+        ctx.fillStyle = 'rgba(255,255,255,0.1)';
+        ctx.fillRect(sx + 4, sy + 12 + Math.sin(gameTime * 0.03 + x) * 3, 12, 2);
+      }
+      
+      // Grid lines
+      ctx.strokeStyle = 'rgba(255,255,255,0.05)';
+      ctx.strokeRect(sx, sy, TILE_SIZE, TILE_SIZE);
+    }
+  }
+  
+  // Draw buildings
+  for (let y = startY; y < endY; y++) {
+    for (let x = startX; x < endX; x++) {
+      const tile = map[y][x];
+      if (tile.type !== 'empty') {
+        drawBuilding(x, y, tile.type, tile.level, tile);
+      }
+    }
+  }
+  
+  // Draw vehicles
+  drawVehicles();
+  
+  // Draw particles
+  drawParticles();
+  
+  // Draw hover highlight
+  if (mouse.gridX >= 0 && mouse.gridX < MAP_W && mouse.gridY >= 0 && mouse.gridY < MAP_H) {
+    const hx = Math.floor(mouse.gridX * TILE_SIZE - camera.x);
+    const hy = Math.floor(mouse.gridY * TILE_SIZE - camera.y);
+    ctx.strokeStyle = selectedTool ? 'rgba(99,102,241,0.8)' : 'rgba(255,255,255,0.5)';
+    ctx.lineWidth = 2;
+    ctx.strokeRect(hx, hy, TILE_SIZE, TILE_SIZE);
+    
+    if (selectedTool && BUILDING_COSTS[selectedTool]) {
+      ctx.fillStyle = 'rgba(99,102,241,0.2)';
+      ctx.fillRect(hx, hy, TILE_SIZE, TILE_SIZE);
+    }
+  }
+  
+  // Night overlay
+  if (dayPhase < 0.3) {
+    ctx.fillStyle = `rgba(0,0,20,${0.4 - dayPhase})`;
+    ctx.fillRect(0, 0, W, H);
+  }
+  
+  // Render minimap
+  renderMinimap();
+}
+
+function drawVehicles() {
+  // Cars
+  vehicles.cars.forEach(car => {
+    const sx = car.x - camera.x;
+    const sy = car.y - camera.y;
+    if (sx < -20 || sx > canvas.width + 20 || sy < -20 || sy > canvas.height + 20) return;
+    
+    ctx.save();
+    ctx.translate(sx, sy);
+    ctx.rotate(Math.atan2(car.vy, car.vx));
+    
+    // Car body
+    ctx.fillStyle = car.color || '#ef4444';
+    ctx.fillRect(-6, -3, 12, 6);
+    // Windshield
+    ctx.fillStyle = '#93c5fd';
+    ctx.fillRect(3, -2, 3, 4);
+    // Headlights
+    if (dayPhase < 0.5) {
+      ctx.fillStyle = 'rgba(255,255,200,0.8)';
+      ctx.fillRect(6, -2, 3, 2);
+      ctx.fillRect(6, 1, 3, 2);
+    }
+    
+    ctx.restore();
+  });
+  
+  // Trains
+  vehicles.trains.forEach(train => {
+    const sx = train.x - camera.x;
+    const sy = train.y - camera.y;
+    if (sx < -30 || sx > canvas.width + 30 || sy < -30 || sy > canvas.height + 30) return;
+    
+    ctx.save();
+    ctx.translate(sx, sy);
+    
+    // Train body
+    ctx.fillStyle = '#3b82f6';
+    ctx.fillRect(-14, -5, 28, 10);
+    ctx.fillStyle = '#1d4ed8';
+    ctx.fillRect(-12, -3, 24, 6);
+    // Windows
+    ctx.fillStyle = dayPhase > 0.5 ? '#fbbf24' : '#1e3a5f';
+    for (let i = -10; i < 10; i += 6) {
+      ctx.fillRect(i, -3, 4, 6);
+    }
+    // Chimney
+    ctx.fillStyle = '#6b7280';
+    ctx.fillRect(8, -8, 4, 4);
+    if (Math.random() < 0.1) {
+      particles.push({
+        x: train.x + 10, y: train.y - 8,
+        vx: -train.vx * 0.5 + (Math.random()-0.5), vy: -0.5,
+        life: 40, maxLife: 40, color: 'rgba(200,200,200,', size: 3
+      });
+    }
+    
+    ctx.restore();
+  });
+  
+  // Ships
+  vehicles.ships.forEach(ship => {
+    const sx = ship.x - camera.x;
+    const sy = ship.y - camera.y;
+    if (sx < -30 || sx > canvas.width + 30 || sy < -30 || sy > canvas.height + 30) return;
+    
+    ctx.save();
+    ctx.translate(sx, sy);
+    
+    // Hull
+    ctx.fillStyle = '#6b7280';
+    ctx.beginPath();
+    ctx.moveTo(-15, -4);
+    ctx.lineTo(15, -4);
+    ctx.lineTo(12, 6);
+    ctx.lineTo(-12, 6);
+    ctx.closePath();
+    ctx.fill();
+    // Cabin
+    ctx.fillStyle = '#9ca3af';
+    ctx.fillRect(-6, -8, 12, 5);
+    // Flag
+    ctx.fillStyle = '#ef4444';
+    ctx.fillRect(0, -14, 8, 6);
+    
+    ctx.restore();
+  });
+  
+  // Planes
+  vehicles.planes.forEach(plane => {
+    const sx = plane.x - camera.x;
+    const sy = plane.y - camera.y;
+    if (sx < -30 || sx > canvas.width + 30 || sy < -30 || sy > canvas.height + 30) return;
+    
+    ctx.save();
+    ctx.translate(sx, sy);
+    ctx.rotate(Math.atan2(plane.vy, plane.vx));
+    
+    // Body
+    ctx.fillStyle = '#f1f5f9';
+    ctx.fillRect(-12, -3, 24, 6);
+    // Wings
+    ctx.fillStyle = '#cbd5e1';
+    ctx.fillRect(-4, -10, 8, 20);
+    // Tail
+    ctx.fillStyle = '#3b82f6';
+    ctx.fillRect(-12, -6, 4, 12);
+    // Lights
+    if (dayPhase < 0.5) {
+      ctx.fillStyle = 'rgba(255,100,100,0.8)';
+      ctx.fillRect(10, -2, 2, 2);
+      ctx.fillStyle = 'rgba(100,255,100,0.8)';
+      ctx.fillRect(10, 1, 2, 2);
+    }
+    
+    ctx.restore();
+  });
+}
+
+function drawParticles() {
+  particles.forEach((p, i) => {
+    const sx = p.x - camera.x;
+    const sy = p.y - camera.y;
+    const alpha = p.life / p.maxLife;
+    ctx.fillStyle = p.color + alpha + ')';
+    ctx.beginPath();
+    ctx.arc(sx, sy, p.size * alpha, 0, Math.PI * 2);
+    ctx.fill();
+  });
+}
+
+function renderMinimap() {
+  mmCtx.fillStyle = '#0a0a1a';
+  mmCtx.fillRect(0, 0, 160, 120);
+  
+  const scaleX = 160 / MAP_W;
+  const scaleY = 120 / MAP_H;
+  
+  for (let y = 0; y < MAP_H; y += 2) {
+    for (let x = 0; x < MAP_W; x += 2) {
+      const tile = map[y][x];
+      let color;
+      if (tile.type !== 'empty') {
+        color = getBuildingColor(tile.type, tile.level);
+      } else {
+        color = getTileColor(tile);
+      }
+      mmCtx.fillStyle = color;
+      mmCtx.fillRect(x * scaleX, y * scaleY, scaleX * 2, scaleY * 2);
+    }
+  }
+  
+  // Camera viewport
+  mmCtx.strokeStyle = '#fff';
+  mmCtx.lineWidth = 1;
+  mmCtx.strokeRect(
+    camera.x / TILE_SIZE * scaleX,
+    camera.y / TILE_SIZE * scaleY,
+    canvas.width / TILE_SIZE * scaleX,
+    canvas.height / TILE_SIZE * scaleY
+  );
+}
+
+// ==================== VEHICLE SYSTEM ====================
+function updateVehicles() {
+  // Spawn cars
+  if (Math.random() < 0.02 * gameSpeed && buildings.residential > 0 && buildings.commercial > 0) {
+    spawnCar();
+  }
+  
+  // Spawn trains
+  if (Math.random() < 0.005 * gameSpeed && buildings.trainstation > 0) {
+    spawnTrain();
+  }
+  
+  // Spawn ships
+  if (Math.random() < 0.003 * gameSpeed && buildings.port > 0) {
+    spawnShip();
+  }
+  
+  // Spawn planes
+  if (Math.random() < 0.002 * gameSpeed && buildings.airport > 0) {
+    spawnPlane();
+  }
+  
+  // Update cars
+  vehicles.cars = vehicles.cars.filter(car => {
+    car.x += car.vx * gameSpeed;
+    car.y += car.vy * gameSpeed;
+    car.life--;
+    
+    // Check if on road
+    let gx = Math.floor(car.x / TILE_SIZE);
+    let gy = Math.floor(car.y / TILE_SIZE);
+    if (gx < 0 || gx >= MAP_W || gy < 0 || gy >= MAP_H) return false;
+    
+    let tile = map[gy][gx];
+    if (tile.type !== 'road') {
+      // Try to find adjacent road
+      if (!tryMoveToRoad(car, gx, gy)) return false;
+    }
+    
+    // Random direction change at intersections
+    if (Math.random() < 0.05) {
+      changeCarDirection(car, gx, gy);
+    }
+    
+    return car.life > 0;
+  });
+  
+  // Update trains
+  vehicles.trains = vehicles.trains.filter(train => {
+    train.x += train.vx * gameSpeed;
+    train.y += train.vy * gameSpeed;
+    train.life--;
+    
+    let gx = Math.floor(train.x / TILE_SIZE);
+    let gy = Math.floor(train.y / TILE_SIZE);
+    if (gx < 0 || gx >= MAP_W || gy < 0 || gy >= MAP_H) return false;
+    
+    let tile = map[gy][gx];
+    if (tile.type !== 'rail' && tile.type !== 'trainstation') {
+      if (!tryMoveToRail(train, gx, gy)) return false;
+    }
+    
+    return train.life > 0;
+  });
+  
+  // Update ships
+  vehicles.ships = vehicles.ships.filter(ship => {
+    ship.x += ship.vx * gameSpeed;
+    ship.y += ship.vy * gameSpeed;
+    ship.life--;
+    
+    let gx = Math.floor(ship.x / TILE_SIZE);
+    let gy = Math.floor(ship.y / TILE_SIZE);
+    if (gx < 0 || gx >= MAP_W || gy < 0 || gy >= MAP_H) return false;
+    
+    if (map[gy][gx].terrain !== 'water') {
+      return false;
+    }
+    
+    // Slight random movement
+    if (Math.random() < 0.02) {
+      ship.vx += (Math.random() - 0.5) * 0.1;
+      ship.vy += (Math.random() - 0.5) * 0.1;
+      let speed = Math.sqrt(ship.vx**2 + ship.vy**2);
+      if (speed > 1.5) { ship.vx *= 1.5/speed; ship.vy *= 1.5/speed; }
+    }
+    
+    return ship.life > 0;
+  });
+  
+  // Update planes
+  vehicles.planes = vehicles.planes.filter(plane => {
+    plane.x += plane.vx * gameSpeed;
+    plane.y += plane.vy * gameSpeed;
+    plane.life--;
+    
+    if (plane.x < -50 || plane.x > MAP_W * TILE_SIZE + 50 || plane.y < -50 || plane.y > MAP_H * TILE_SIZE + 50) {
+      return false;
+    }
+    
+    return plane.life > 0;
+  });
+  
+  // Update vehicle panel
+  document.getElementById('vpCars').textContent = vehicles.cars.length;
+  document.getElementById('vpTrains').textContent = vehicles.trains.length;
+  document.getElementById('vpShips').textContent = vehicles.ships.length;
+  document.getElementById('vpPlanes').textContent = vehicles.planes.length;
+}
+
+function spawnCar() {
+  // Find a road tile
+  let roadTiles = [];
+  for (let y = 0; y < MAP_H; y++) {
+    for (let x = 0; x < MAP_W; x++) {
+      if (map[y][x].type === 'road') {
+        roadTiles.push({x, y});
+      }
+    }
+  }
+  
+  if (roadTiles.length === 0) return;
+  
+  let rt = roadTiles[Math.floor(Math.random() * roadTiles.length)];
+  let colors = ['#ef4444', '#3b82f6', '#f59e0b', '#22c55e', '#a855f7', '#f97316', '#ec4899'];
+  
+  let vx = 0, vy = 0;
+  if (Math.random() < 0.5) vx = Math.random() < 0.5 ? 1 : -1;
+  else vy = Math.random() < 0.5 ? 1 : -1;
+  
+  vehicles.cars.push({
+    x: rt.x * TILE_SIZE + TILE_SIZE/2,
+    y: rt.y * TILE_SIZE + TILE_SIZE/2,
+    vx: vx * 1.2,
+    vy: vy * 1.2,
+    color: colors[Math.floor(Math.random() * colors.length)],
+    life: 300 + Math.random() * 300
+  });
+}
+
+function tryMoveToRoad(car, gx, gy) {
+  const dirs = [[0,-1],[0,1],[-1,0],[1,0]];
+  for (let [dx, dy] of dirs) {
+    let nx = gx + dx, ny = gy + dy;
+    if (nx >= 0 && nx < MAP_W && ny >= 0 && ny < MAP_H && map[ny][nx].type === 'road') {
+      car.vx = dx * 1.2;
+      car.vy = dy * 1.2;
+      car.x += dx * 2;
+      car.y += dy * 2;
+      return true;
+    }
+  }
+  return false;
+}
+
+function changeCarDirection(car, gx, gy) {
+  const dirs = [[0,-1],[0,1],[-1,0],[1,0]];
+  let validDirs = [];
+  
+  for (let [dx, dy] of dirs) {
+    let nx = gx + dx, ny = gy + dy;
+    if (nx >= 0 && nx < MAP_W && ny >= 0 && ny < MAP_H && map[ny][nx].type === 'road') {
+      validDirs.push([dx, dy]);
+    }
+  }
+  
+  if (validDirs.length > 0) {
+    let [dx, dy] = validDirs[Math.floor(Math.random() * validDirs.length)];
+    car.vx = dx * 1.2;
+    car.vy = dy * 1.2;
+  }
+}
+
+function spawnTrain() {
+  let railTiles = [];
+  for (let y = 0; y < MAP_H; y++) {
+    for (let x = 0; x < MAP_W; x++) {
+      if (map[y][x].type === 'rail' || map[y][x].type === 'trainstation') {
+        railTiles.push({x, y});
+      }
+    }
+  }
+  
+  if (railTiles.length === 0) return;
+  
+  let rt = railTiles[Math.floor(Math.random() * railTiles.length)];
+  let dir = Math.random() < 0.5;
+  
+  vehicles.trains.push({
+    x: rt.x * TILE_SIZE + TILE_SIZE/2,
+    y: rt.y * TILE_SIZE + TILE_SIZE/2,
+    vx: dir ? 2 : 0,
+    vy: dir ? 0 : 2,
+    life: 500 + Math.random() * 300
+  });
+}
+
+function tryMoveToRail(train, gx, gy) {
+  const dirs = [[0,-1],[0,1],[-1,0],[1,0]];
+  for (let [dx, dy] of dirs) {
+    let nx = gx + dx, ny = gy + dy;
+    if (nx >= 0 && nx < MAP_W && ny >= 0 && ny < MAP_H) {
+      let t = map[ny][nx];
+      if (t.type === 'rail' || t.type === 'trainstation') {
+        train.vx = dx * 2;
+        train.vy = dy * 2;
+        train.x += dx * 2;
+        train.y += dy * 2;
+        return true;
+      }
+    }
+  }
+  return false;
+}
+
+function spawnShip() {
+  let waterTiles = [];
+  for (let y = 0; y < MAP_H; y++) {
+    for (let x = 0; x < MAP_W; x++) {
+      if (map[y][x].terrain === 'water') {
+        waterTiles.push({x, y});
+      }
+    }
+  }
+  
+  if (waterTiles.length === 0) return;
+  
+  let wt = waterTiles[Math.floor(Math.random() * waterTiles.length)];
+  let angle = Math.random() * Math.PI * 2;
+  
+  vehicles.ships.push({
+    x: wt.x * TILE_SIZE + TILE_SIZE/2,
+    y: wt.y * TILE_SIZE + TILE_SIZE/2,
+    vx: Math.cos(angle) * 0.8,
+    vy: Math.sin(angle) * 0.8,
+    life: 600 + Math.random() * 400
+  });
+}
+
+function spawnPlane() {
+  let side = Math.floor(Math.random() * 4);
+  let x, y, angle;
+  
+  switch(side) {
+    case 0: x = -20; y = Math.random() * MAP_H * TILE_SIZE; angle = Math.random() * Math.PI * 0.5 + Math.PI * 0.25; break;
+    case 1: x = MAP_W * TILE_SIZE + 20; y = Math.random() * MAP_H * TILE_SIZE; angle = Math.PI + Math.random() * Math.PI * 0.5 + Math.PI * 0.25; break;
+    case 2: x = Math.random() * MAP_W * TILE_SIZE; y = -20; angle = Math.PI * 0.5 + Math.random() * Math.PI * 0.5; break;
+    case 3: x = Math.random() * MAP_W * TILE_SIZE; y = MAP_H * TILE_SIZE + 20; angle = Math.PI * 1.5 + Math.random() * Math.PI * 0.5; break;
+  }
+  
+  vehicles.planes.push({
+    x, y,
+    vx: Math.cos(angle) * 3,
+    vy: Math.sin(angle) * 3,
+    life: 400 + Math.random() * 200
+  });
+}
+
+// ==================== PARTICLES ====================
+function updateParticles() {
+  particles = particles.filter(p => {
+    p.x += p.vx * gameSpeed;
+    p.y += p.vy * gameSpeed;
+    p.life -= gameSpeed;
+    p.size *= 1.02;
+    return p.life > 0;
+  });
+}
+
+// ==================== CITY SIMULATION ====================
+function simulate() {
+  if (gameSpeed === 0) return;
+  
+  gameTime++;
+  
+  // Update date
+  let year = Math.floor(gameTime / 3600) + 1;
+  let month = Math.floor((gameTime % 3600) / 300) + 1;
+  document.getElementById('dateDisplay').textContent = `📅 Tahun ${year}, Bulan ${month}`;
+  
+  // Collect stats
+  powerSupply = 0; powerDemand = 0;
+  waterSupply = 0; waterDemand = 0;
+  pollution = 0;
+  let totalHappy = 50;
+  let totalHealth = 50;
+  let totalEdu = 50;
+  let crime = 50;
+  let totalIncome = 0;
+  let totalExpense = 0;
+  totalBuildings = 0;
+  totalRoads = 0;
+  buildings = { residential: 0, commercial: 0, industrial: 0 };
+  
+  for (let y = 0; y < MAP_H; y++) {
+    for (let x = 0; x < MAP_W; x++) {
+      const tile = map[y][x];
+      
+      if (tile.type !== 'empty') {
+        const info = BUILDING_INFO[tile.type];
+        if (!info) continue;
+        
+        totalBuildings++;
+        totalExpense += info.maint || 0;
+        
+        if (tile.type === 'road') totalRoads++;
+        
+        powerDemand += info.power || 0;
+        waterDemand += info.water || 0;
+        
+        if (tile.type === 'powerplant') powerSupply += 50;
+        if (tile.type === 'watertower') waterSupply += 50;
+        if (tile.type === 'residential') buildings.residential++;
+        if (tile.type === 'commercial') buildings.commercial++;
+        if (tile.type === 'industrial') buildings.industrial++;
+        
+        if (info.income) totalIncome += info.income;
+        if (info.pollution) pollution += info.pollution;
+        if (info.happy) totalHappy += info.happy;
+        if (info.health) totalHealth += info.health;
+        if (info.edu) totalEdu += info.edu;
+        if (info.crime) crime += info.crime;
+        
+        // Growth
+        if (tile.type === 'residential' || tile.type === 'commercial' || tile.type === 'industrial') {
+          tile.growthTimer++;
+          if (tile.growthTimer > 200 && tile.level < 3) {
+            // Check conditions for growth
+            let canGrow = true;
+            if (powerDemand > powerSupply) canGrow = false;
+            if (waterDemand > waterSupply) canGrow = false;
+            
+            if (canGrow && Math.random() < 0.01 * gameSpeed) {
+              tile.level++;
+              tile.growthTimer = 0;
+              audio.play('levelup');
+            }
+          }
+        }
+      }
+    }
+  }
+  
+  // Check road connectivity for income
+  let hasPower = powerDemand <= powerSupply;
+  let hasWater = waterDemand <= waterSupply;
+  
+  // Tax income from population
+  let taxIncome = population * 0.5;
+  totalIncome += taxIncome;
+  
+  // Bonus if powered and watered
+  if (hasPower) totalIncome *= 1.1;
+  if (hasWater) totalIncome *= 1.05;
+  
+  money += (totalIncome - totalExpense) * gameSpeed * 0.01;
+  
+  // Population calculation
+  population = buildings.residential * 20 * (hasPower ? 1.5 : 0.5) * (hasWater ? 1.3 : 0.5);
+  
+  // Happiness
+  happiness = Math.max(0, Math.min(100, totalHappy / Math.max(1, buildings.residential + buildings.commercial + buildings.industrial)));
+  happiness = Math.max(0, Math.min(100, 50 + pollution * -2 + (hasPower ? 10 : -10) + (hasWater ? 10 : -10)));
+  
+  healthLevel = Math.min(100, 50 + totalHealth);
+  eduLevel = Math.min(100, 50 + totalEdu);
+  crimeRate = Math.max(0, Math.min(100, crime));
+  
+  income = totalIncome;
+  expenses = totalExpense;
+  pollution = Math.max(0, pollution);
+  
+  // Update UI
+  updateUI();
+}
+
+function updateUI() {
+  document.getElementById('moneyDisplay').textContent = '$' + Math.floor(money).toLocaleString();
+  document.getElementById('popDisplay').textContent = Math.floor(population).toLocaleString();
+  document.getElementById('happyDisplay').textContent = Math.floor(happiness) + '%';
+  document.getElementById('powerDisplay').textContent = powerSupply + '/' + powerDemand;
+  document.getElementById('waterDisplay').textContent = waterSupply + '/' + waterDemand;
+  
+  document.getElementById('infoIncome').textContent = '+$' + Math.floor(income);
+  document.getElementById('infoExpense').textContent = '-$' + Math.floor(expenses);
+  document.getElementById('infoBuildings').textContent = totalBuildings;
+  document.getElementById('infoRoads').textContent = totalRoads;
+  document.getElementById('infoPollution').textContent = Math.floor(pollution);
+  document.getElementById('infoPollution').style.color = pollution > 20 ? '#f87171' : '#4ade80';
+  document.getElementById('infoCrime').textContent = Math.floor(crimeRate) + '%';
+  document.getElementById('infoCrime').style.color = crimeRate > 30 ? '#f87171' : '#4ade80';
+  document.getElementById('infoHealth').textContent = Math.floor(healthLevel) + '%';
+  document.getElementById('infoEdu').textContent = Math.floor(eduLevel) + '%';
+  document.getElementById('infoRes').textContent = buildings.residential;
+  document.getElementById('infoCom').textContent = buildings.commercial;
+  document.getElementById('infoInd').textContent = buildings.industrial;
+}
+
+// ==================== BUILDING SYSTEM ====================
+function placeBuilding(gx, gy, type) {
+  if (gx < 0 || gx >= MAP_W || gy < 0 || gy >= MAP_H) return;
+  
+  const tile = map[gy][gx];
+  const cost = BUILDING_COSTS[type];
+  
+  if (!cost && cost !== 0) return;
+  
+  if (money < cost) {
+    showNotification('❌ Uang tidak cukup!');
+    audio.play('error');
+    return;
+  }
+  
+  // Water placement
+  if (type === 'water') {
+    if (tile.terrain === 'water') {
+      showNotification('❌ Sudah ada air di sini!');
+      audio.play('error');
+      return;
+    }
+    tile.type = 'water';
+    tile.terrain = 'water';
+    tile.building = null;
+    money -= 0;
+    audio.play('build');
+    spawnBuildParticles(gx, gy);
+    return;
+  }
+  
+  // Can't build on water
+  if (tile.terrain === 'water' && type !== 'port') {
+    showNotification('❌ Tidak bisa membangun di atas air!');
+    audio.play('error');
+    return;
+  }
+  
+  // Can't build on existing building
+  if (tile.type !== 'empty' && type !== 'bulldoze') {
+    showNotification('❌ Sudah ada bangunan di sini!');
+    audio.play('error');
+    return;
+  }
+  
+  if (type === 'bulldoze') {
+    if (tile.type !== 'empty') {
+      money += Math.floor((BUILDING_COSTS[tile.type] || 0) * 0.3);
+      tile.type = 'empty';
+      tile.terrain = 'grass';
+      tile.level = 0;
+      tile.growthTimer = 0;
+      audio.play('bulldoze');
+      spawnBulldozeParticles(gx, gy);
+    }
+    return;
+  }
+  
+  if (type === 'tree') {
+    tile.type = 'tree';
+    tile.level = 0;
+    money -= cost;
+    audio.play('build');
+    return;
+  }
+  
+  tile.type = type;
+  tile.level = 0;
+  tile.growthTimer = 0;
+  money -= cost;
+  
+  audio.play('build');
+  spawnBuildParticles(gx, gy);
+  
+  showNotification(`✅ ${BUILDING_INFO[type].name} dibangun! (-$${cost})`);
+}
+
+function spawnBuildParticles(gx, gy) {
+  for (let i = 0; i < 8; i++) {
+    particles.push({
+      x: gx * TILE_SIZE + TILE_SIZE/2,
+      y: gy * TILE_SIZE + TILE_SIZE/2,
+      vx: (Math.random() - 0.5) * 3,
+      vy: (Math.random() - 0.5) * 3,
+      life: 30 + Math.random() * 20,
+      maxLife: 50,
+      color: 'rgba(99,102,241,',
+      size: 3 + Math.random() * 3
+    });
+  }
+}
+
+function spawnBulldozeParticles(gx, gy) {
+  for (let i = 0; i < 6; i++) {
+    particles.push({
+      x: gx * TILE_SIZE + TILE_SIZE/2,
+      y: gy * TILE_SIZE + TILE_SIZE/2,
+      vx: (Math.random() - 0.5) * 2,
+      vy: (Math.random() - 0.5) * 2 - 1,
+      life: 20 + Math.random() * 20,
+      maxLife: 40,
+      color: 'rgba(239,68,68,',
+      size: 2 + Math.random() * 2
+    });
+  }
+}
+
+// ==================== INPUT HANDLING ====================
+function setupInput() {
+  canvas.addEventListener('mousedown', (e) => {
+    audio.init();
+    
+    if (e.button === 2 || e.button === 1) {
+      isDragging = true;
+      dragStart = { x: e.clientX, y: e.clientY };
+      camStart = { x: camera.x, y: camera.y };
+      return;
+    }
+    
+    if (selectedTool) {
+      placeBuilding(mouse.gridX, mouse.gridY, selectedTool);
+      mouse.down = true;
+    } else {
+      isDragging = true;
+      dragStart = { x: e.clientX, y: e.clientY };
+      camStart = { x: camera.x, y: camera.y };
+    }
+  });
+  
+  canvas.addEventListener('mousemove', (e) => {
+    mouse.x = e.clientX;
+    mouse.y = e.clientY;
+    mouse.gridX = Math.floor((e.clientX + camera.x) / TILE_SIZE);
+    mouse.gridY = Math.floor((e.clientY + camera.y) / TILE_SIZE);
+    
+    if (isDragging) {
+      camera.x = camStart.x - (e.clientX - dragStart.x);
+      camera.y = camStart.y - (e.clientY - dragStart.y);
+    }
+    
+    if (mouse.down && selectedTool) {
+      placeBuilding(mouse.gridX, mouse.gridY, selectedTool);
+    }
+    
+    // Tooltip
+    if (mouse.gridX >= 0 && mouse.gridX < MAP_W && mouse.gridY >= 0 && mouse.gridY < MAP_H) {
+      showTooltip(e.clientX, e.clientY, mouse.gridX, mouse.gridY);
+    }
+  });
+  
+  canvas.addEventListener('mouseup', (e) => {
+    mouse.down = false;
+    isDragging = false;
+  });
+  
+  canvas.addEventListener('contextmenu', (e) => e.preventDefault());
+  
+  canvas.addEventListener('wheel', (e) => {
+    e.preventDefault();
+    // Zoom could be implemented here
+  });
+  
+  // Keyboard
+  document.addEventListener('keydown', (e) => {
+    switch(e.key) {
+      case 'Escape': selectTool(null); break;
+      case '1': selectTool('road'); break;
+      case '2': selectTool('residential'); break;
+      case '3': selectTool('commercial'); break;
+      case '4': selectTool('industrial'); break;
+      case '5': selectTool('bulldoze'); break;
+      case ' ': e.preventDefault(); togglePause(); break;
+    }
+  });
+}
+
+function selectTool(tool) {
+  audio.play('click');
+  selectedTool = tool;
+  
+  document.querySelectorAll('.tool-btn').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.tool === tool);
+  });
+  
+  const buildInfo = document.getElementById('buildInfo');
+  if (tool && BUILDING_INFO[tool]) {
+    const info = BUILDING_INFO[tool];
+    buildInfo.style.display = 'block';
+    document.getElementById('biName').textContent = info.name;
+    document.getElementById('biDesc').textContent = info.desc;
+    
+    let statsHTML = '';
+    if (info.cost) statsHTML += `<div class="bi-stat">💰 <span>$${info.cost}</span></div>`;
+    if (info.maint) statsHTML += `<div class="bi-stat">🔧 <span>$${info.maint}/bln</span></div>`;
+    if (info.income) statsHTML += `<div class="bi-stat">💵 <span>+$${info.income}</span></div>`;
+    if (info.pop) statsHTML += `<div class="bi-stat">👥 <span>+${info.pop}</span></div>`;
+    if (info.happy) statsHTML += `<div class="bi-stat">😊 <span>${info.happy > 0 ? '+' : ''}${info.happy}</span></div>`;
+    if (info.pollution) statsHTML += `<div class="bi-stat">🏭 <span>${info.pollution > 0 ? '+' : ''}${info.pollution}</span></div>`;
+    if (info.power) statsHTML += `<div class="bi-stat">⚡ <span>${info.power > 0 ? '+' : ''}${info.power}</span></div>`;
+    
+    document.getElementById('biStats').innerHTML = statsHTML;
+  } else {
+    buildInfo.style.display = 'none';
+  }
+}
+
+function showTooltip(x, y, gx, gy) {
+  const tooltip = document.getElementById('tooltip');
+  const tile = map[gy]?.[gx];
+  
+  if (!tile) {
+    tooltip.classList.remove('show');
+    return;
+  }
+  
+  let title = tile.type !== 'empty' ? BUILDING_INFO[tile.type]?.name || tile.type : tile.terrain;
+  let desc = '';
+  let cost = '';
+  
+  if (tile.type !== 'empty' && BUILDING_INFO[tile.type]) {
+    const info = BUILDING_INFO[tile.type];
+    desc = info.desc;
+    cost = `Level: ${tile.level}`;
+  }
+  
+  tooltip.querySelector('.tt-title').textContent = title;
+  tooltip.querySelector('.tt-desc').textContent = desc;
+  tooltip.querySelector('.tt-cost').textContent = cost;
+  
+  tooltip.style.left = (x + 15) + 'px';
+  tooltip.style.top = (y + 15) + 'px';
+  tooltip.classList.add('show');
+}
+
+function togglePause() {
+  setSpeed(gameSpeed === 0 ? 1 : 0);
+}
+
+function setSpeed(speed) {
+  gameSpeed = speed;
+  document.querySelectorAll('#speedControls button').forEach((btn, i) => {
+    btn.classList.toggle('active', i === speed);
+  });
+  audio.play('click');
+}
+
+function showNotification(text) {
+  const notif = document.getElementById('notification');
+  notif.textContent = text;
+  notif.classList.add('show');
+  setTimeout(() => notif.classList.remove('show'), 2000);
+}
+
+function showModal(title, text) {
+  document.getElementById('modalTitle').textContent = title;
+  document.getElementById('modalText').textContent = text;
+  document.getElementById('modal').classList.add('show');
+}
+
+function closeModal() {
+  document.getElementById('modal').classList.remove('show');
+}
+
+// ==================== GAME LOOP ====================
+let lastTime = 0;
+let simTimer = 0;
+const SIM_INTERVAL = 1000 / 30; // 30 ticks per second
+
+function gameLoop(timestamp) {
+  const delta = timestamp - lastTime;
+  lastTime = timestamp;
+  
+  // Simulation tick
+  simTimer += delta;
+  if (simTimer >= SIM_INTERVAL) {
+    simTimer -= SIM_INTERVAL;
+    simulate();
+    updateVehicles();
+    updateParticles();
+  }
+  
+  render();
+  requestAnimationFrame(gameLoop);
+}
+
+// ==================== INITIALIZATION ====================
+function init() {
+  canvas = document.getElementById('gameCanvas');
+  ctx = canvas.getContext('2d');
+  mmCanvas = document.getElementById('minimapCanvas');
+  mmCtx = mmCanvas.getContext('2d');
+  
+  canvas.width = window.innerWidth;
+  canvas.height = window.innerHeight;
+  mmCanvas.width = 160;
+  mmCanvas.height = 120;
+  
+  generateMap();
+  
+  // Center camera
+  camera.x = (MAP_W * TILE_SIZE - canvas.width) / 2;
+  camera.y = (MAP_H * TILE_SIZE - canvas.height) / 2;
+  
+  setupInput();
+  
+  window.addEventListener('resize', () => {
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+  });
+  
+  // Hide loading
+  setTimeout(() => {
+    document.getElementById('loading').classList.add('hidden');
+    showModal('🏙️ Selamat Datang di City Builder!', 
+      'Bangun kota impianmu! Tempatkan jalan, rumah, toko, pabrik, dan fasilitas kota. ' +
+      'Klik kiri untuk membangun, klik kanan/seret untuk menggeser peta. ' +
+      'Tekan ESC untuk membatalkan alat. Jangan lupa sediakan listrik ⚡ dan air 💧!');
+  }, 1500);
+  
+  requestAnimationFrame(gameLoop);
+}
+
+// Start game when DOM is ready
+document.addEventListener('DOMContentLoaded', init);
+</script>
+</body>
+</html>
